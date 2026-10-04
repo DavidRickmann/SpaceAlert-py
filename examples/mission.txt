@@ -1,0 +1,12 @@
+# A short practice mission.
+trajectories: T3 T5 T6     # red, white, blue
+
+threat: 1 red Fighter
+threat: 2 blue Gunship
+threat: 4 white SE1-01      # Frigate
+
+# Captain first, then clockwise.
+Alice: red A A         | lift - B lift    | - - - - -
+Bob:   C - -           | C - A A          | C A - - -
+Carol: blue A A        | A - - -          | lift C - - -
+Dave:  lift blue B     | red B - -        | B - C - -

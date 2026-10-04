@@ -72,6 +72,17 @@ REACTOR_CAPACITY = {Zone.RED: 3, Zone.WHITE: 5, Zone.BLUE: 3}
 BATTLEBOT_STATIONS = (LOWER_RED, UPPER_BLUE)
 
 
+class DamageTile(Enum):
+    """Each zone has one of each tile, shuffled into its own stack."""
+
+    UPPER_CANNON = "heavy laser cannon"
+    LOWER_CANNON = "lower cannon"
+    SHIELD = "shield"
+    REACTOR = "reactor"
+    GRAVOLIFT = "gravolift"
+    STRUCTURE = "structure"
+
+
 @dataclass
 class Ship:
     shields: dict[Zone, int] = field(default_factory=lambda: {z: 1 for z in ZONES})
@@ -92,6 +103,44 @@ class Ship:
     computer_maintained: set[int] = field(default_factory=set)
     # Best visual confirmation per phase: number of players on one turn.
     visual_confirmation: dict[int, int] = field(default_factory=dict)
+    # Undrawn damage tiles per zone (drawn from the end) and tiles drawn so far.
+    damage_stacks: dict[Zone, list[DamageTile]] = field(
+        default_factory=lambda: {z: list(DamageTile) for z in ZONES}
+    )
+    damage: dict[Zone, list[DamageTile]] = field(default_factory=lambda: {z: [] for z in ZONES})
+    interceptors_lost: bool = False
+
+    def damaged(self, zone: Zone, tile: DamageTile) -> bool:
+        return tile in self.damage[zone]
+
+    def shield_capacity(self, zone: Zone) -> int:
+        return SHIELD_CAPACITY[zone] - self.damaged(zone, DamageTile.SHIELD)
+
+    def reactor_capacity(self, zone: Zone) -> int:
+        return REACTOR_CAPACITY[zone] - self.damaged(zone, DamageTile.REACTOR)
+
+    def heavy_laser_strength(self, zone: Zone) -> int:
+        return HEAVY_LASER_STRENGTH[zone] - self.damaged(zone, DamageTile.UPPER_CANNON)
+
+    def light_laser_strength(self, zone: Zone) -> int:
+        return LIGHT_LASER_STRENGTH - self.damaged(zone, DamageTile.LOWER_CANNON)
+
+    def pulse_cannon_range(self) -> int:
+        return 2 - self.damaged(Zone.WHITE, DamageTile.LOWER_CANNON)
+
+    def draw_damage(self, zone: Zone) -> DamageTile | None:
+        """Draw one damage tile for a zone; None means the zone is destroyed."""
+        if not self.damage_stacks[zone]:
+            return None
+        tile = self.damage_stacks[zone].pop()
+        self.damage[zone].append(tile)
+        if tile is DamageTile.SHIELD:
+            self.shields[zone] = min(self.shields[zone], self.shield_capacity(zone))
+        elif tile is DamageTile.REACTOR:
+            self.reactors[zone] = min(self.reactors[zone], self.reactor_capacity(zone))
+        elif tile is DamageTile.GRAVOLIFT:
+            self.damaged_gravolifts.add(zone)
+        return tile
 
     def start_turn(self) -> None:
         self.gravolifts_used.clear()

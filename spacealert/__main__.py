@@ -1,47 +1,31 @@
-"""Resolve a mission from a file of action boards.
+"""Resolve a mission file.
 
-    python -m spacealert examples/boards.txt
+    python -m spacealert examples/mission.txt [--seed N]
 
-Each non-blank line is `Name: <12 actions>`, in turn order starting with the
-captain. Lines starting with `#` are ignored. See spacealert/actions.py for
-the notation.
+See spacealert/mission.py for the file format. Damage tiles are drawn at
+random; give a seed to get the same draws every time.
 """
 
-import sys
+import argparse
 
-from .actions import parse_board
-from .player import Player
-from .resolver import Game
+from .mission import parse_mission
 
 
-def read_crew(text: str) -> list[Player]:
-    crew = []
-    for number, line in enumerate(text.splitlines(), 1):
-        line = line.split("#", 1)[0].strip()
-        if not line:
-            continue
-        name, sep, board = line.partition(":")
-        if not sep:
-            raise SystemExit(f"Line {number}: expected 'Name: actions'")
+def main() -> None:
+    parser = argparse.ArgumentParser(prog="spacealert", description="Resolve a Space Alert mission.")
+    parser.add_argument("mission", help="mission file")
+    parser.add_argument("--seed", type=int, help="seed for drawing damage tiles")
+    args = parser.parse_args()
+    with open(args.mission, encoding="utf-8") as f:
         try:
-            crew.append(Player(name.strip(), parse_board(board)))
+            game = parse_mission(f.read(), seed=args.seed)
         except ValueError as e:
-            raise SystemExit(f"Line {number}: {e}")
-    return crew
-
-
-def main(argv: list[str]) -> None:
-    if len(argv) != 2:
-        raise SystemExit(__doc__)
-    with open(argv[1], encoding="utf-8") as f:
-        crew = read_crew(f.read())
-    result = Game(crew).resolve()
+            raise SystemExit(str(e))
+    result = game.resolve()
     print("\n".join(result.log))
     print()
-    print(f"Visual confirmation: {result.visual_confirmation_points}")
-    print(f"Knocked out: {result.knocked_out}, disabled battlebots: {result.disabled_bots}")
-    print(f"Score so far (no threats yet): {result.score}")
+    print(result.summary())
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()
