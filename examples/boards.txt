@@ -1,0 +1,5 @@
+# Captain first, then clockwise.
+Alice: red lift C   | bot C - -      | bot - - - -
+Bob:   lift B A     | B A A -        | B A - - -
+Carol: blue A B     | A lift C A*    | - - - - -
+Dave:  C - lift     | C C - -        | C C - - -

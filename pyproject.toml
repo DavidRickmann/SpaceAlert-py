@@ -1,0 +1,11 @@
+[project]
+name = "spacealert"
+version = "0.1.0"
+description = "Resolution Round engine for the Space Alert board game"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
